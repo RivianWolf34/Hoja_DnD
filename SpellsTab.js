@@ -226,9 +226,10 @@ const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellS
                                             </span>
                                         </div>
 
-                                        <div className="text-xs text-neutral-700 leading-relaxed border-l-4 border-purple-500 pl-3 py-1 bg-purple-50/40 rounded-r-lg mt-1 whitespace-pre-line">
-                                            {spell.description}
-                                        </div>
+                                        <div 
+                                            className="text-xs text-neutral-700 leading-relaxed border-l-4 border-purple-500 pl-3 py-1 bg-purple-50/40 rounded-r-lg mt-1 whitespace-pre-line"
+                                                dangerouslySetInnerHTML={{ __html: spell.description }}
+                                        ></div>
                                     </div>
                                 ))}
                             </div>

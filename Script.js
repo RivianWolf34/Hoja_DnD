@@ -1563,7 +1563,7 @@ const [knownSpells, setKnownSpells] = useState([]);
                         setKnownSpells={setKnownSpells}
                         info={info}
                         spellSlots={spellSlots}       // <-- Tu estado de espacios de magia
-                        setSpellSlots={setSpellSlots} // <-- Tu función para actualizar los espacios
+                        toggleSpellSlot={toggleSpellSlot} // <-- Tu función para actualizar los espacios
                     />
                 )}
             </div>
