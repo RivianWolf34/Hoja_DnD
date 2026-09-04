@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Personaje D&D V1</title>
+    
+<!-- Librerías Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+<!-- Librerías de React y Babel 100% locales (Offline) -->
+    <script src="./react.min.js"></script>
+    <script src="./react-dom.min.js"></script>
+    <script src="./babel.min.js"></script>
+
+<!-- Conexión con tu archivo de estilos CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-neutral-200 text-base">
+    
+<!-- Aquí es donde React "inyectará" toda tu aplicación -->
+    <div id="root"></div>
+
+<!-- Conexión con tus bases de datos -->
+    <script src="razas.js"></script>
+    <script src="objetos.js"></script>
+    <script src="competencias.js"></script>
+    <script src="clases.js"></script>
+    <script src="dotes.js"></script>
+    <script src="spellsDatabase.js"></script>
+
+
+<!-- Cargas las pestañas primero -->
+    <script type="text/babel" src="MainTab.js"></script>
+    <script type="text/babel" src="InventoryTab.js"></script>
+    <script type="text/babel" src="FeatsTab.js"></script>
+    <script type="text/babel" src="SpellsTab.js"></script>
+
+<!-- Conexión con tu archivo de lógica JS (Nota el type="text/babel") -->
+    <script type="text/babel" src="script.js"></script>
+</body>
+</html>
