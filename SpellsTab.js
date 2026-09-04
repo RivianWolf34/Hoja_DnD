@@ -11,12 +11,66 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
 // ==========================================
 // COMPONENTE PRINCIPAL DEL GRIMORIO
 // ==========================================
-const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellSlot }) => {
+    const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellSlot, mods, profBonus, formatMod, setRollNotification }) => {
     
     // --- ESTADOS LOCALES ---
     const [spellSearch, setSpellSearch] = useState('');
     const [isSpellDropdownOpen, setIsSpellDropdownOpen] = useState(false);
 
+    // --- AUTOMATIZACIÓN DE CARACTERÍSTICA DE LANZAMIENTO ---
+    const getSpellcastingStat = () => {
+        const lowerClass = (info.classLevel || "").toLowerCase();
+        
+        // Sabiduría: Clérigo, Druida, Explorador (Ranger)
+        if (["clérigo", "clerigo", "druida", "explorador", "ranger"].some(c => lowerClass.includes(c))) {
+            return { key: 'wis', name: 'Sabiduría' };
+        }
+        // Carisma: Bardo, Brujo (Warlock), Hechicero (Sorcerer), Paladín
+        if (["bardo", "bard", "brujo", "warlock", "hechicero", "sorcerer", "paladín", "paladin"].some(c => lowerClass.includes(c))) {
+            return { key: 'cha', name: 'Carisma' };
+        }
+        // Inteligencia por defecto (Mago, Artífice, Guerrero/Pícaro arcanos, etc.)
+        return { key: 'int', name: 'Inteligencia' };
+    };
+
+    const spellStat = getSpellcastingStat();
+    const spellModValue = mods ? mods[spellStat.key] : 0;
+    
+    // Fórmulas oficiales de D&D 5e
+    const spellAttackBonus = profBonus + spellModValue;
+    const spellSaveDC = 8 + profBonus + spellModValue;
+
+    // Función para tirar el dado de ataque de conjuro
+    const rollSpellAttack = () => {
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        const total = d20 + spellAttackBonus;
+        
+        setRollNotification({
+            title: "Tirada de Ataque de Conjuro",
+            details: `Dado (d20): [${d20}] + Comp(+${profBonus}) + Mod.${spellStat.name}(${formatMod(spellModValue)})`,
+            total: total,
+            type: d20 === 20 ? 'crit' : d20 === 1 ? 'fail' : 'normal'
+        });
+    };
+    
+    
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
     // --- FUNCIONES LOCALES ---
     useEffect(() => {
         const closeDropdown = (e) => { 
@@ -65,6 +119,33 @@ const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellS
                 <div className="text-sm font-bold bg-white px-3 py-1 rounded-full border border-neutral-300 text-neutral-600 shadow-sm">
                     {knownSpells.length} Hechizos Conocidos
                 </div>
+            </div>
+
+            {/* ✨ NUEVO PANEL DE ESTADÍSTICAS Y ATAQUE DE CONJURO */}
+            <div className="bg-purple-900/5 border-2 border-purple-300 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
+                <div className="flex flex-col gap-1 w-full sm:w-auto">
+                    <span className="text-xs font-black text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                        ✨ Parámetros Mágicos ({spellStat.name})
+                    </span>
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-neutral-700 mt-0.5">
+                        <span className="bg-white px-2.5 py-1 rounded border border-purple-200">
+                            Ataque: <strong className="text-purple-900 font-black">{formatMod(spellAttackBonus)}</strong>
+                        </span>
+                        <span className="bg-white px-2.5 py-1 rounded border border-purple-200">
+                            CD de Salvación: <strong className="text-purple-900 font-black">{spellSaveDC}</strong>
+                        </span>
+                        <span className="text-neutral-400 text-[11px] italic">
+                            (Comp +{profBonus} | Mod {formatMod(spellModValue)})
+                        </span>
+                    </div>
+                </div>
+
+                <button 
+                    onClick={rollSpellAttack}
+                    className="w-full sm:w-auto bg-purple-800 hover:bg-purple-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-md border-b-4 border-purple-950 active:border-b-0 active:translate-y-[2px] transition flex items-center justify-center gap-2 text-sm shrink-0"
+                >
+                    🎲 Ataque de Conjuro ({formatMod(spellAttackBonus)})
+                </button>
             </div>
 
             {/* ⚡ PANEL DE ESPACIOS DE MAGIA / USOS (Integrado aquí) */}

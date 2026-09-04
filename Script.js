@@ -1564,6 +1564,10 @@ const [knownSpells, setKnownSpells] = useState([]);
                         info={info}
                         spellSlots={spellSlots}       // <-- Tu estado de espacios de magia
                         toggleSpellSlot={toggleSpellSlot} // <-- Tu función para actualizar los espacios
+                        mods={mods}               // <-- Nuevo: Modificadores de atributos
+                        profBonus={profBonus}     // <-- Nuevo: Bono de competencia por nivel
+                        formatMod={formatMod}     // <-- Nuevo: Formateador de signos (+/-)
+                        setRollNotification={setRollNotification} // <-- Nuevo: Sistema de alertas de tirada
                     />
                 )}
             </div>
