@@ -8,70 +8,15 @@ const BookIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/20
 const SparklesIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>);
 const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
 
-// ==========================================
-// COMPONENTE PRINCIPAL DEL GRIMORIO
-// ==========================================
-    const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellSlot, mods, profBonus, formatMod, setRollNotification }) => {
+const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellSlot, mods, profBonus, formatMod, setRollNotification }) => {
     
     // --- ESTADOS LOCALES ---
     const [spellSearch, setSpellSearch] = useState('');
     const [isSpellDropdownOpen, setIsSpellDropdownOpen] = useState(false);
 
-    // --- AUTOMATIZACIÓN DE CARACTERÍSTICA DE LANZAMIENTO ---
-    const getSpellcastingStat = () => {
-        const lowerClass = (info.classLevel || "").toLowerCase();
-        
-        // Sabiduría: Clérigo, Druida, Explorador (Ranger)
-        if (["clérigo", "clerigo", "druida", "explorador", "ranger"].some(c => lowerClass.includes(c))) {
-            return { key: 'wis', name: 'Sabiduría' };
-        }
-        // Carisma: Bardo, Brujo (Warlock), Hechicero (Sorcerer), Paladín
-        if (["bardo", "bard", "brujo", "warlock", "hechicero", "sorcerer", "paladín", "paladin"].some(c => lowerClass.includes(c))) {
-            return { key: 'cha', name: 'Carisma' };
-        }
-        // Inteligencia por defecto (Mago, Artífice, Guerrero/Pícaro arcanos, etc.)
-        return { key: 'int', name: 'Inteligencia' };
-    };
+    // --- ESTADO PARA HABILIDADES PERSONALIZADAS ---
+    const [customAbilities, setCustomAbilities] = useState([]);
 
-    const spellStat = getSpellcastingStat();
-    const spellModValue = mods ? mods[spellStat.key] : 0;
-    
-    // Fórmulas oficiales de D&D 5e
-    const spellAttackBonus = profBonus + spellModValue;
-    const spellSaveDC = 8 + profBonus + spellModValue;
-
-    // Función para tirar el dado de ataque de conjuro
-    const rollSpellAttack = () => {
-        const d20 = Math.floor(Math.random() * 20) + 1;
-        const total = d20 + spellAttackBonus;
-        
-        setRollNotification({
-            title: "Tirada de Ataque de Conjuro",
-            details: `Dado (d20): [${d20}] + Comp(+${profBonus}) + Mod.${spellStat.name}(${formatMod(spellModValue)})`,
-            total: total,
-            type: d20 === 20 ? 'crit' : d20 === 1 ? 'fail' : 'normal'
-        });
-    };
-    
-    
-
-
-
-
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    // --- FUNCIONES LOCALES ---
     useEffect(() => {
         const closeDropdown = (e) => { 
             if (!e.target.closest('.spell-dropdown-container')) setIsSpellDropdownOpen(false); 
@@ -97,7 +42,108 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
         return classString.replace(/Artificer,?\s*/gi, '').trim();
     };
 
-    // Agrupamos los hechizos conocidos por nivel
+    // --- FUNCIONES PARA HABILIDADES PERSONALIZADAS ---
+    const addCustomAbility = () => {
+        const newAbility = {
+            id: Date.now(),
+            title: "Nueva Habilidad",
+            description: "Describe aquí los efectos de tu habilidad...",
+            uses: Array(10).fill(false), // 10 círculos de usos
+            selectedStat: "none",        // Atributo base a sumar
+            diceCounts: { 4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 0, 100: 0 } // Dados configurables
+        };
+        setCustomAbilities([...customAbilities, newAbility]);
+    };
+
+    const updateAbilityField = (id, field, value) => {
+        setCustomAbilities(customAbilities.map(ab => ab.id === id ? { ...ab, [field]: value } : ab));
+    };
+
+    const toggleAbilityUse = (abilityId, index) => {
+        setCustomAbilities(customAbilities.map(ab => {
+            if (ab.id === abilityId) {
+                const newUses = [...ab.uses];
+                newUses[index] = !newUses[index];
+                return { ...ab, uses: newUses };
+            }
+            return ab;
+        }));
+    };
+
+    const updateAbilityDice = (abilityId, sides, qty) => {
+        setCustomAbilities(customAbilities.map(ab => {
+            if (ab.id === abilityId) {
+                return {
+                    ...ab,
+                    diceCounts: { ...ab.diceCounts, [sides]: Math.max(0, parseInt(qty) || 0) }
+                };
+            }
+            return ab;
+        }));
+    };
+
+    const rollAbilityDice = (ab) => {
+        let rollsDetail = [];
+        let total = 0;
+        
+        [4, 6, 8, 10, 12, 20, 100].forEach(sides => {
+            const count = Number(ab.diceCounts[sides] || 0);
+            if (count > 0) {
+                let currentRolls = [];
+                for (let i = 0; i < count; i++) {
+                    const r = Math.floor(Math.random() * sides) + 1;
+                    currentRolls.push(r);
+                    total += r;
+                }
+                rollsDetail.push(`${count}d${sides}: [${currentRolls.join(', ')}]`);
+            }
+        });
+
+        let statMod = 0;
+        let statLabel = "";
+        if (ab.selectedStat !== "none" && mods) {
+            statMod = mods[ab.selectedStat] || 0;
+            const statNames = { str: 'Fuerza', dex: 'Destreza', con: 'Constitución', int: 'Inteligencia', wis: 'Sabiduría', cha: 'Carisma' };
+            statLabel = ` + Mod.${statNames[ab.selectedStat]}(${formatMod(statMod)})`;
+            total += statMod;
+        }
+
+        setRollNotification({
+            title: `Habilidad: ${ab.title}`,
+            details: rollsDetail.length > 0 ? `${rollsDetail.join(' | ')}${statLabel}` : `Sin dados seleccionados${statLabel}`,
+            total: total,
+            type: 'normal'
+        });
+    };
+
+    const removeCustomAbility = (id) => {
+        setCustomAbilities(customAbilities.filter(ab => ab.id !== id));
+    };
+
+    // --- AUTOMATIZACIÓN DE CARACTERÍSTICA DE LANZAMIENTO ---
+    const getSpellcastingStat = () => {
+        const lowerClass = (info.classLevel || "").toLowerCase();
+        if (["clérigo", "clerigo", "druida", "explorador", "ranger"].some(c => lowerClass.includes(c))) return { key: 'wis', name: 'Sabiduría' };
+        if (["bardo", "bard", "brujo", "warlock", "hechicero", "sorcerer", "paladín", "paladin"].some(c => lowerClass.includes(c))) return { key: 'cha', name: 'Carisma' };
+        return { key: 'int', name: 'Inteligencia' };
+    };
+
+    const spellStat = getSpellcastingStat();
+    const spellModValue = mods ? mods[spellStat.key] : 0;
+    const spellAttackBonus = profBonus + spellModValue;
+    const spellSaveDC = 8 + profBonus + spellModValue;
+
+    const rollSpellAttack = () => {
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        const total = d20 + spellAttackBonus;
+        setRollNotification({
+            title: "Tirada de Ataque de Conjuro",
+            details: `Dado (d20): [${d20}] + Comp(+${profBonus}) + Mod.${spellStat.name}(${formatMod(spellModValue)})`,
+            total: total,
+            type: d20 === 20 ? 'crit' : d20 === 1 ? 'fail' : 'normal'
+        });
+    };
+
     const spellsByLevel = knownSpells.reduce((acc, spell) => {
         const lvl = spell.level === 0 ? "Trucos (Cantrips)" : `Nivel ${spell.level}`;
         if (!acc[lvl]) acc[lvl] = [];
@@ -105,9 +151,6 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
         return acc;
     }, {});
 
-    // ==========================================
-    // RENDERIZADO VISUAL (HTML/JSX)
-    // ==========================================
     return (
         <div className="p-4 sm:p-6 bg-neutral-50 border-2 border-neutral-300 rounded-lg min-h-[500px] flex flex-col gap-6">
             
@@ -121,7 +164,7 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
                 </div>
             </div>
 
-            {/* ✨ NUEVO PANEL DE ESTADÍSTICAS Y ATAQUE DE CONJURO */}
+            {/* PANEL DE ESTADÍSTICAS Y ATAQUE DE CONJURO */}
             <div className="bg-purple-900/5 border-2 border-purple-300 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
                 <div className="flex flex-col gap-1 w-full sm:w-auto">
                     <span className="text-xs font-black text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -148,70 +191,7 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
                 </button>
             </div>
 
-            {/* ⚡ PANEL DE ESPACIOS DE MAGIA / USOS (Integrado aquí) */}
-            <div className="border-2 border-neutral-300 rounded-lg p-3 bg-neutral-50 flex flex-col">
-                <div className="flex items-center gap-2 font-bold text-neutral-700 mb-2 border-b-2 border-neutral-200 pb-1 text-xs">
-                    <ZapIcon size={18} /> ESPACIOS DE MAGIA / USOS
-                </div>
-                <p className="text-[10px] text-neutral-500 mb-3 leading-tight italic">
-                    * El nivel de magia indica que ese slot sirve para conjuros de ese nivel o inferior.
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                    {spellSlots && Object.entries(spellSlots).map(([level, slots]) => {
-                        const lvlIdx = Number(level) - 1;
-                        
-                        const getAvailableSpellSlots = (cls, lvl) => {
-                            const numLvl = Number(lvl);
-                            const fullCasters = ["Mago", "Hechicero", "Clérigo", "Druida", "Bardo"];
-                            const halfCasters = ["Paladín", "Explorador"];
-                            const warlock = ["Brujo"];
-
-                            if (fullCasters.includes(cls)) {
-                                const table = [[], [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], [4,3,3,2,0,0,0,0,0], [4,3,3,3,1,0,0,0,0], [4,3,3,3,2,0,0,0,0], [4,3,3,3,2,1,0,0,0], [4,3,3,3,2,1,0,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,1,0], [4,3,3,3,2,1,1,1,0], [4,3,3,3,2,1,1,1,1], [4,3,3,3,3,1,1,1,1], [4,3,3,3,3,2,1,1,1], [4,3,3,3,3,2,2,1,1]];
-                                return table[numLvl] || table[20];
-                            }
-                            if (halfCasters.includes(cls)) {
-                                const table = [[], [0,0,0,0,0,0,0,0,0], [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0], [4,3,0,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], [4,3,3,2,0,0,0,0,0], [4,3,3,2,0,0,0,0,0], [4,3,3,3,1,0,0,0,0], [4,3,3,3,1,0,0,0,0], [4,3,3,3,2,0,0,0,0], [4,3,3,3,2,0,0,0,0]];
-                                return table[numLvl] || table[20];
-                            }
-                            if (warlock.includes(cls)) {
-                                const table = [[], [1,0,0,0,0,0,0,0,0], [2,0,0,0,0,0,0,0,0], [0,2,0,0,0,0,0,0,0], [0,2,0,0,0,0,0,0,0], [0,0,2,0,0,0,0,0,0], [0,0,2,0,0,0,0,0,0], [0,0,0,2,0,0,0,0,0], [0,0,0,2,0,0,0,0,0], [0,0,0,0,2,0,0,0,0], [0,0,0,0,2,0,0,0,0], [0,0,0,0,3,0,0,0,0], [0,0,0,0,3,0,0,0,0], [0,0,0,0,3,0,0,0,0], [0,0,0,0,3,0,0,0,0], [0,0,0,0,3,0,0,0,0], [0,0,0,0,3,0,0,0,0], [0,0,0,0,4,0,0,0,0], [0,0,0,0,4,0,0,0,0], [0,0,0,0,4,0,0,0,0], [0,0,0,0,4,0,0,0,0]];
-                                return table[numLvl] || table[20];
-                            }
-                            return [0,0,0,0,0,0,0,0,0];
-                        };
-
-                        const maxAllowed = getAvailableSpellSlots(info.classLevel, info.level)[lvlIdx];
-                        
-                        return (
-                            <div key={`spell-level-${level}`} className="flex flex-col gap-2 items-center bg-white border border-neutral-200 rounded p-2 shadow-sm">
-                                <span className="text-[10px] font-black text-purple-900 uppercase text-center leading-tight">NIVEL DE MAGIA {level}</span>
-                                <div className={`flex gap-1.5 justify-center ${level === '1' ? 'grid grid-cols-2 grid-rows-2 w-fit' : 'flex-wrap'}`}>
-                                    {slots.map((isActive, idx) => {
-                                        const isLocked = idx >= maxAllowed;
-                                        return (
-                                            <button
-                                                key={`spell-${level}-${idx}`}
-                                                onClick={() => !isLocked && toggleSpellSlot(level, idx)}
-                                                disabled={isLocked}
-                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                                                    isLocked ? 'bg-neutral-200 border-neutral-300 opacity-50 cursor-not-allowed' :
-                                                    isActive ? 'bg-purple-600 border-purple-800 shadow-inner' : 'bg-neutral-100 border-neutral-300 hover:border-purple-400 hover:bg-purple-50'
-                                                }`}
-                                                title={`Nivel de Magia ${level}`}
-                                            >
-                                                {isLocked ? <span className="text-[10px] text-neutral-400">✖</span> : (isActive && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>)}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
-
-            {/* BUSCADOR Y SELECTOR DE HECHIZOS (Filtrado por Clase) */}
+            {/* BUSCADOR Y SELECTOR DE HECHIZOS */}
             <div className="relative spell-dropdown-container max-w-xl z-50">
                 <label className="text-xs font-bold text-neutral-500 block mb-1">APRENDER NUEVO HECHIZO (Apto para: {info.classLevel})</label>
                 <button onClick={() => setIsSpellDropdownOpen(!isSpellDropdownOpen)} className="w-full text-left text-sm border-2 border-purple-300 rounded-lg p-3 bg-purple-50 focus:outline-none flex justify-between items-center text-purple-900 font-bold shadow-sm transition hover:bg-purple-100">
@@ -270,6 +250,123 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
                 )}
             </div>
 
+            {/* --- SECCIÓN DE HABILIDADES PERSONALIZADAS --- */}
+            <div className="flex flex-col gap-4 mt-4 border-t-2 border-purple-200 pt-6">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-black text-purple-900 flex items-center gap-2">
+                        ⚡ Habilidades y Rasgos Personalizados
+                    </h3>
+                    <button 
+                        onClick={addCustomAbility}
+                        className="bg-purple-800 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg shadow text-xs transition flex items-center gap-1 border-b-2 border-purple-950 active:border-b-0 active:translate-y-[2px]"
+                    >
+                        + Añadir Habilidad Personalizada
+                    </button>
+                </div>
+
+                {customAbilities.length === 0 ? (
+                    <div className="text-center p-6 border-2 border-dashed border-neutral-300 rounded-xl text-neutral-400 italic text-xs">
+                        No has añadido ninguna habilidad personalizada. Usa el botón de arriba para crear una.
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {customAbilities.map((ab) => (
+                            <div key={ab.id} className="bg-white border-2 border-purple-200 rounded-xl p-4 shadow-sm flex flex-col gap-3 relative group">
+                                <button 
+                                    onClick={() => removeCustomAbility(ab.id)} 
+                                    className="absolute top-2 right-2 text-neutral-300 hover:text-red-700 font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-red-50 transition" 
+                                    title="Eliminar habilidad"
+                                >
+                                    &times;
+                                </button>
+
+                                {/* Título y Círculos de Usos */}
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pr-6">
+                                    <input 
+                                        type="text" 
+                                        value={ab.title} 
+                                        onChange={(e) => updateAbilityField(ab.id, 'title', e.target.value)}
+                                        className="font-black text-purple-950 text-base border-b border-transparent hover:border-purple-300 focus:border-purple-600 focus:outline-none bg-transparent w-full sm:w-1/2"
+                                        placeholder="Nombre de la habilidad"
+                                    />
+                                    
+                                    {/* 10 Círculos de Usos */}
+                                    <div className="flex items-center gap-1 bg-neutral-50 p-1.5 rounded-lg border border-neutral-200 overflow-x-auto max-w-full">
+                                        <span className="text-[10px] font-bold text-neutral-500 mr-1 uppercase">Usos:</span>
+                                        {ab.uses.map((isUsed, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => toggleAbilityUse(ab.id, idx)}
+                                                className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
+                                                    isUsed ? 'bg-purple-600 border-purple-800' : 'bg-white border-neutral-300 hover:border-purple-400'
+                                                }`}
+                                                title={`Uso ${idx + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Caja de texto para descripción */}
+                                <textarea 
+                                    value={ab.description}
+                                    onChange={(e) => updateAbilityField(ab.id, 'description', e.target.value)}
+                                    rows="2"
+                                    className="w-full text-xs text-neutral-700 bg-purple-50/30 border border-purple-100 rounded-lg p-2 focus:outline-none focus:border-purple-400 resize-y"
+                                    placeholder="Describe la habilidad aquí..."
+                                />
+
+                                {/* Configuración de Dados y Atributos para la Tirada */}
+                                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-neutral-100 bg-neutral-50 p-2 rounded-lg">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-[10px] font-bold text-neutral-600 uppercase">🎲 Dados:</span>
+                                        {[4, 6, 8, 10, 12, 20, 100].map(sides => (
+                                            <div key={sides} className="flex items-center gap-0.5 bg-white px-1.5 py-0.5 rounded border border-neutral-200">
+                                                <span className="text-[10px] font-bold text-neutral-500">d{sides}</span>
+                                                <input 
+                                                    type="number" 
+                                                    min="0" 
+                                                    max="99" 
+                                                    value={ab.diceCounts[sides] === 0 ? '' : ab.diceCounts[sides]} 
+                                                    onChange={(e) => updateAbilityDice(ab.id, sides, e.target.value)} 
+                                                    placeholder="0" 
+                                                    className="w-6 text-center text-xs font-bold border-b border-neutral-300 focus:outline-none focus:border-purple-600 bg-transparent" 
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-neutral-200">
+                                            <span className="text-[10px] font-bold text-neutral-600 uppercase">Atributo:</span>
+                                            <select 
+                                                value={ab.selectedStat} 
+                                                onChange={(e) => updateAbilityField(ab.id, 'selectedStat', e.target.value)}
+                                                className="text-xs font-bold text-purple-900 bg-transparent focus:outline-none cursor-pointer"
+                                            >
+                                                <option value="none">Ninguno</option>
+                                                <option value="str">Fuerza</option>
+                                                <option value="dex">Destreza</option>
+                                                <option value="con">Constitución</option>
+                                                <option value="int">Inteligencia</option>
+                                                <option value="wis">Sabiduría</option>
+                                                <option value="cha">Carisma</option>
+                                            </select>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => rollAbilityDice(ab)}
+                                            className="bg-purple-800 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded text-xs transition shadow border-b-2 border-purple-950 active:border-b-0 active:translate-y-[2px]"
+                                        >
+                                            Tirar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {/* LISTA DE HECHIZOS CONOCIDOS */}
             <div className="flex flex-col gap-6 mt-2">
                 {Object.keys(spellsByLevel).length === 0 ? (
@@ -309,7 +406,7 @@ const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/200
 
                                         <div 
                                             className="text-xs text-neutral-700 leading-relaxed border-l-4 border-purple-500 pl-3 py-1 bg-purple-50/40 rounded-r-lg mt-1 whitespace-pre-line"
-                                                dangerouslySetInnerHTML={{ __html: spell.description }}
+                                            dangerouslySetInnerHTML={{ __html: spell.description }}
                                         ></div>
                                     </div>
                                 ))}

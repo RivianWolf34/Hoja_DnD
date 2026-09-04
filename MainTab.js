@@ -14,7 +14,7 @@ const MainTab = ({
     computedAttacks, racialAttacksUI, texts, handleTextChange, 
     rollAbilityCheck, rollWeaponAttack, rollWeaponDamage, rollPoisonDamage, 
     removeWeaponPoison, handleQuantityChange, handleAbilityChange, info,
-    formatMod, currentRace, conditionsList 
+    formatMod, currentRace, conditionsList, activeCustomResistances 
 }) => {
     
     // Aquí adentro va todo el código exacto de la pestaña "Hoja Principal"
@@ -158,7 +158,35 @@ const MainTab = ({
                                 </button>
                             ))}
                         </div>
+
+                        {/* --- SECCIÓN DE CONDICIONES Y RESISTENCIAS ACTIVAS --- */}
+                        <div className="flex flex-wrap gap-2 items-center my-3">
+                            {activeConditions.map((cond, i) => (
+                                <span key={i} className="bg-red-100 text-red-800 text-xs font-black px-2.5 py-1 rounded-full border border-red-300 shadow-sm">
+                                    {cond}
+                                </span>
+                            ))}
+    
+                        {/* ✨ RESISTENCIAS ACTIVAS POR EQUIPO MÁGICO */}
+                            {activeCustomResistances.map((res, i) => (
+                                <span key={`res-${i}`} className="bg-blue-100 text-blue-900 text-xs font-black px-2.5 py-1 rounded-full border border-blue-300 shadow-sm" title={`Otorgado por: ${res.name}`}>
+                        🛡️ Resistencia: {res.resistance}
+                                </span>
+                            ))}
+                        </div>
                     </div>
+
+
+
+
+
+
+
+
+
+
+
+
 
     
                     <div className="border-2 border-neutral-300 rounded-lg p-3 bg-neutral-50 flex flex-col">

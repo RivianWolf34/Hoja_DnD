@@ -5,7 +5,10 @@ const InventoryTab = ({
     autoProficienciesList, texts, handleTextChange, setTexts,
     craftPoison, craftAlchemy, useHealingPotion, 
     setApplyPoisonModal, setRollNotification, handleQuantityChange,
-    toggleEquip, removeInventoryItem, handleToggleGrip
+    toggleEquip, removeInventoryItem, handleToggleGrip, customInventory,
+    addCustomItem, updateCustomItemField,
+    updateCustomWeaponField, adjustCustomQuantity,
+    removeCustomItem, mods, formatMod
 }) => {
     // 1. ESTADOS LOCALES (Sacados del script principal)
     const [itemSearch, setItemSearch] = useState('');
@@ -65,6 +68,66 @@ const InventoryTab = ({
             setIsDropdownOpen(false);
         }
     };
+
+
+// --- ESTADOS Y FUNCIONES PARA OBJETOS PERSONALIZADOS ---
+    
+    const rollCustomWeaponAttack = (item) => {
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        const statMod = (item.weapon.stat !== "none" && mods) ? mods[item.weapon.stat] : 0;
+        const totalBonus = Number(item.weapon.attackBonus) + statMod;
+        const total = d20 + totalBonus;
+
+        setRollNotification({
+            title: `Ataque: ${item.name}`,
+            details: `Dado (d20): [${d20}] + Bono(${item.weapon.attackBonus})${item.weapon.stat !== "none" ? ` + Mod(${formatMod(statMod)})` : ''}`,
+            total: total,
+            type: d20 === 20 ? 'crit' : d20 === 1 ? 'fail' : 'normal'
+        });
+    };
+
+    const rollCustomWeaponDamage = (item) => {
+        const parts = (item.weapon.damageDice || "1d6").split('d');
+        const count = parseInt(parts[0]) || 1;
+        const sides = parseInt(parts[1]) || 6;
+        
+        let rolls = [];
+        let totalDice = 0;
+        for(let i = 0; i < count; i++){
+            const r = Math.floor(Math.random() * sides) + 1;
+            rolls.push(r);
+            totalDice += r;
+        }
+
+        const statMod = (item.weapon.stat !== "none" && mods) ? mods[item.weapon.stat] : 0;
+        let baseDamageTotal = totalDice + statMod;
+        let detailText = `Físico (${count}d${sides}): [${rolls.join(', ')}] ${statMod !== 0 ? formatMod(statMod) : ''}`;
+
+        let elementalTotal = 0;
+        if (item.weapon.elementalType && item.weapon.elementalType !== "Ninguno" && item.weapon.elementalDice) {
+            const eParts = item.weapon.elementalDice.split('d');
+            const eCount = parseInt(eParts[0]) || 1;
+            const eSides = parseInt(eParts[1]) || 6;
+            let eRolls = [];
+            for(let i = 0; i < eCount; i++){
+                const r = Math.floor(Math.random() * eSides) + 1;
+                eRolls.push(r);
+                elementalTotal += r;
+            }
+            detailText += ` | ⚡ Elemental ${item.weapon.elementalType} (${eCount}d${eSides}): [${eRolls.join(', ')}]`;
+        }
+
+        const finalDamage = Math.max(1, baseDamageTotal + elementalTotal);
+
+        setRollNotification({
+            title: `Daño: ${item.name}`,
+            details: detailText,
+            total: finalDamage,
+            type: 'damage'
+        });
+    };
+
+
 
     return (
         <div className="flex flex-col gap-6 w-full">
@@ -342,6 +405,181 @@ const InventoryTab = ({
                 
                 <textarea name="equipment" value={texts.equipment} onChange={handleTextChange} className="w-full bg-white border-2 border-neutral-200 rounded-lg p-2.5 resize-none focus:outline-none focus:border-red-600 text-sm text-neutral-700 min-h-[60px]" placeholder="Otras anotaciones de inventario general..."></textarea>
             </div>
+
+
+            {/* --- SECCIÓN NUEVA: OBJETOS PERSONALIZADOS Y HOMEBREW --- */}
+            <div className="border-2 border-neutral-300 rounded-xl p-5 bg-neutral-50 flex flex-col shadow-sm w-full gap-4">
+                <div className="flex justify-between items-center border-b-2 border-neutral-200 pb-2">
+                    <span className="font-extrabold text-neutral-800 text-base">OBJETOS PERSONALIZADOS / HOMEBREW</span>
+                    <button 
+                        onClick={addCustomItem}
+                        className="bg-red-800 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg shadow text-xs transition flex items-center gap-1 border-b-2 border-red-950 active:border-b-0 active:translate-y-[2px]"
+                    >
+                        + Añadir Objeto Personalizado
+                    </button>
+                </div>
+
+                {customInventory.length === 0 ? (
+                    <div className="text-center p-6 border-2 border-dashed border-neutral-300 rounded-xl text-neutral-400 italic text-xs">
+                        No has creado ningún objeto personalizado. Usa el botón de arriba para agregar uno.
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {customInventory.map((item) => (
+                            <div key={item.id} className="bg-white border-2 border-neutral-200 rounded-xl p-4 shadow-sm flex flex-col gap-3 relative">
+                                <button 
+                                    onClick={() => removeCustomItem(item.id)} 
+                                    className="absolute top-2 right-2 text-neutral-300 hover:text-red-700 font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-red-50 transition"
+                                    title="Eliminar objeto"
+                                >
+                                    &times;
+                                </button>
+
+                                {/* Fila superior: Nombre, Categoría, Cantidad, Sintonización y Equipado */}
+                                <div className="flex flex-wrap items-center gap-3 pr-6">
+                                    <input 
+                                        type="text" 
+                                        value={item.name} 
+                                        onChange={(e) => updateCustomItemField(item.id, 'name', e.target.value)}
+                                        className="font-black text-neutral-900 text-base border-b border-transparent hover:border-neutral-300 focus:border-red-600 focus:outline-none bg-transparent flex-1 min-w-[180px]"
+                                        placeholder="Nombre del objeto"
+                                    />
+
+                                    <select 
+                                        value={item.category}
+                                        onChange={(e) => updateCustomItemField(item.id, 'category', e.target.value)}
+                                        className="text-xs font-bold bg-neutral-100 border border-neutral-300 rounded p-1.5 text-neutral-700 cursor-pointer focus:outline-none"
+                                    >
+                                        <option value="Objeto Maravilloso">Objeto Maravilloso</option>
+                                        <option value="Arma">Arma</option>
+                                        <option value="Armadura">Armadura / Escudo</option>
+                                        <option value="Poción">Poción</option>
+                                        <option value="Pergamino">Pergamino</option>
+                                        <option value="Herramienta">Herramienta</option>
+                                    </select>
+
+                                    {/* Control de cantidad acumulable */}
+                                    <div className="flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded border border-neutral-200">
+                                        <span className="text-[10px] font-bold text-neutral-500 uppercase">Cant:</span>
+                                        <button onClick={() => adjustCustomQuantity(item.id, -1)} className="font-bold px-1 text-neutral-600 hover:text-red-700">-</button>
+                                        <span className="text-xs font-black w-5 text-center">{item.quantity}</span>
+                                        <button onClick={() => adjustCustomQuantity(item.id, 1)} className="font-bold px-1 text-neutral-600 hover:text-red-700">+</button>
+                                    </div>
+
+                                    {/* Sintonización */}
+                                    <label className="flex items-center gap-1.5 text-xs font-bold text-purple-900 cursor-pointer bg-purple-50 px-2 py-1 rounded border border-purple-200">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={item.attuned} 
+                                            onChange={(e) => updateCustomItemField(item.id, 'attuned', e.target.checked)}
+                                            className="accent-purple-700"
+                                        />
+                                        Sintonizado
+                                    </label>
+
+                                    {/* Equipar */}
+                                    <label className={`flex items-center gap-1.5 text-xs font-bold cursor-pointer px-2 py-1 rounded border ${item.equipped ? 'bg-green-50 text-green-900 border-green-300' : 'bg-neutral-50 text-neutral-600 border-neutral-200'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={item.equipped} 
+                                            onChange={(e) => updateCustomItemField(item.id, 'equipped', e.target.checked)}
+                                            className="accent-green-700"
+                                        />
+                                        {item.equipped ? 'Equipado' : 'En Mochila'}
+                                    </label>
+                                </div>
+
+                                {/* Descripción */}
+                                <textarea 
+                                    value={item.description}
+                                    onChange={(e) => updateCustomItemField(item.id, 'description', e.target.value)}
+                                    rows="2"
+                                    className="w-full text-xs text-neutral-700 bg-neutral-50 border border-neutral-200 rounded-lg p-2 focus:outline-none focus:border-red-400 resize-y"
+                                    placeholder="Propiedades, notas o efectos mágicos..."
+                                />
+
+                                {/* CONFIGURACIÓN SI ES ARMA */}
+                                {item.category === 'Arma' && (
+                                    <div className="flex flex-col gap-2 bg-red-50/50 p-2.5 rounded-lg border border-red-200 text-xs">
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <span className="font-black text-red-900 uppercase">⚔️ Config de Arma:</span>
+                                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-neutral-200">
+                                                <span className="font-bold text-neutral-600">Bono de Ataque:</span>
+                                                <input type="number" value={item.weapon.attackBonus} onChange={(e) => updateCustomWeaponField(item.id, 'attackBonus', e.target.value)} className="w-10 text-center font-bold border-b border-neutral-300 focus:outline-none"/>
+                                            </div>
+                                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-neutral-200">
+                                                <span className="font-bold text-neutral-600">Dados Físicos:</span>
+                                                <input type="text" value={item.weapon.damageDice} onChange={(e) => updateCustomWeaponField(item.id, 'damageDice', e.target.value)} className="w-14 text-center font-bold border-b border-neutral-300 focus:outline-none" placeholder="1d8"/>
+                                            </div>
+                                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-neutral-200">
+                                                <span className="font-bold text-neutral-600">Atributo:</span>
+                                                <select value={item.weapon.stat} onChange={(e) => updateCustomWeaponField(item.id, 'stat', e.target.value)} className="font-bold text-red-900 bg-transparent focus:outline-none cursor-pointer">
+                                                    <option value="none">Ninguno</option>
+                                                    <option value="str">Fuerza</option>
+                                                    <option value="dex">Destreza</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-red-200">
+                                            <span className="font-bold text-red-800">✨ Daño Elemental Extra:</span>
+                                            <select value={item.weapon.elementalType || "Ninguno"} onChange={(e) => updateCustomWeaponField(item.id, 'elementalType', e.target.value)} className="font-bold text-xs bg-white border border-neutral-300 rounded p-1 cursor-pointer">
+                                                <option value="Ninguno">Ninguno</option>
+                                                <option value="Fuego">Fuego</option>
+                                                <option value="Frío">Frío</option>
+                                                <option value="Rayo">Rayo</option>
+                                                <option value="Ácido">Ácido</option>
+                                                <option value="Veneno">Veneno</option>
+                                                <option value="Necrótico">Necrótico</option>
+                                                <option value="Radiante">Radiante</option>
+                                                <option value="Psíquico">Psíquico</option>
+                                                <option value="Trueno">Trueno</option>
+                                            </select>
+                                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-neutral-200">
+                                                <span className="font-bold text-neutral-600">Dados Extra:</span>
+                                                <input type="text" value={item.weapon.elementalDice || ""} onChange={(e) => updateCustomWeaponField(item.id, 'elementalDice', e.target.value)} className="w-14 text-center font-bold border-b border-neutral-300 focus:outline-none" placeholder="1d6"/>
+                                            </div>
+                                            <div className="flex gap-2 ml-auto">
+                                                <button onClick={() => rollCustomWeaponAttack(item)} className="bg-red-800 hover:bg-red-700 text-white font-bold px-2.5 py-1 rounded shadow text-xs">Tirar Ataque</button>
+                                                <button onClick={() => rollCustomWeaponDamage(item)} className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-2.5 py-1 rounded shadow text-xs">Tirar Daño Total</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* CONFIGURACIÓN SI ES ARMADURA */}
+                                {item.category === 'Armadura' && (
+                                    <div className="flex flex-wrap items-center gap-4 bg-blue-50/50 p-2.5 rounded-lg border border-blue-200 text-xs">
+                                        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-neutral-200">
+                                            <span className="font-black text-blue-900 uppercase">🛡️ Bono CA:</span>
+                                            <input type="number" value={item.armorBonus} onChange={(e) => updateCustomItemField(item.id, 'armorBonus', Number(e.target.value))} className="w-10 text-center font-bold border-b border-neutral-300 focus:outline-none"/>
+                                        </div>
+                                        <div className="flex items-center gap-2 bg-white px-2 py-1 rounded border border-neutral-200">
+                                            <span className="font-black text-blue-900 uppercase">🛡️ Otorga Resistencia:</span>
+                                            <select value={item.resistanceType || "Ninguna"} onChange={(e) => updateCustomItemField(item.id, 'resistanceType', e.target.value)} className="font-bold text-blue-950 bg-transparent focus:outline-none cursor-pointer">
+                                                <option value="Ninguna">Ninguna</option>
+                                                <option value="Fuego">Fuego</option>
+                                                <option value="Frío">Frío</option>
+                                                <option value="Rayo">Rayo</option>
+                                                <option value="Ácido">Ácido</option>
+                                                <option value="Veneno">Veneno</option>
+                                                <option value="Necrótico">Necrótico</option>
+                                                <option value="Radiante">Radiante</option>
+                                                <option value="Psíquico">Psíquico</option>
+                                                <option value="Trueno">Trueno</option>
+                                                <option value="Físico (No Mágico)">Físico (No Mágico)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+
+
 
             {/* FILA 3: EQUIPAMIENTO ACTIVO */}
             <div className="border-2 border-neutral-300 rounded-xl p-5 bg-neutral-50 flex flex-col shadow-sm w-full">

@@ -63,6 +63,161 @@ const CharacterSheet = () => {
         deathSaves: { successes: [false, false, false], failures: [false, false, false] }
     });
 
+
+
+
+
+
+
+// --- FUNCIÓN PARA GUARDAR (EXPORTAR) EL PERSONAJE ---
+    const saveCharacterData = () => {
+        const characterData = {
+            version: "1.0",
+            info,
+            abilities,
+            proficiencies,
+            combat,
+            customInventory,
+            knownSpells,
+            spellSlots,
+            activeConditions,
+            texts,
+            inventory,
+            selectedFeats,
+            currency
+        };
+        
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(characterData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `${(info.name || 'personaje').toLowerCase().replace(/\s+/g, '_')}_dnd.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        setRollNotification({
+            title: "¡Personaje Guardado!",
+            details: `Se ha descargado el archivo de "${info.name || 'tu personaje'}" con éxito.`,
+            total: '💾',
+            type: 'crit'
+        });
+    };
+
+    // --- FUNCIÓN PARA CARGAR (IMPORTAR) EL PERSONAJE ---
+    const loadCharacterData = (e) => {
+        const fileReader = new FileReader();
+        if (e.target.files && e.target.files[0]) {
+            fileReader.readAsText(e.target.files[0], "UTF-8");
+            fileReader.onload = (event) => {
+                try {
+                    const parsedData = JSON.parse(event.target.result);
+                    
+                    if (parsedData.info) setInfo(parsedData.info);
+                    if (parsedData.abilities) setAbilities(parsedData.abilities);
+                    if (parsedData.proficiencies) setProficiencies(parsedData.proficiencies);
+                    if (parsedData.combat) setCombat(parsedData.combat);
+                    if (parsedData.customInventory) setCustomInventory(parsedData.customInventory);
+                    if (parsedData.knownSpells) setKnownSpells(parsedData.knownSpells);
+                    if (parsedData.spellSlots) setSpellSlots(parsedData.spellSlots);
+                    if (parsedData.activeConditions) setActiveConditions(parsedData.activeConditions);
+                    if (parsedData.texts) setTexts(parsedData.texts);
+                    if (parsedData.inventory) setInventory(parsedData.inventory);
+                    if (parsedData.selectedFeats) setSelectedFeats(parsedData.selectedFeats);
+                    if (parsedData.currency) setCurrency(parsedData.currency);
+                    
+                    setRollNotification({
+                        title: "¡Personaje Cargado!",
+                        details: `Los datos de "${parsedData.info?.name || 'Personaje'}" se han cargado correctamente.`,
+                        total: '📂',
+                        type: 'crit'
+                    });
+                } catch (error) {
+                    alert("Error al leer el archivo JSON. Asegúrate de que sea una hoja de personaje válida.");
+                }
+            };
+        }
+        // Limpia el input para permitir cargar el mismo archivo dos veces seguidas si es necesario
+        e.target.value = null;
+    };
+
+
+
+
+
+
+
+
+
+
+
+// --- ESTADO PARA OBJETOS PERSONALIZADOS (En Script.js) ---
+const [customInventory, setCustomInventory] = useState([]);
+
+const addCustomItem = () => {
+    const newItem = {
+        id: Date.now(),
+        name: "Nuevo Objeto Mágico",
+        category: "Objeto Maravilloso",
+        quantity: 1,
+        attuned: false,
+        equipped: false,
+        description: "...",
+        weapon: { 
+            hasAttack: false, 
+            attackBonus: 0, 
+            damageDice: "1d8", 
+            stat: "str",
+            elementalType: "Ninguno",
+            elementalDice: "" 
+        },
+        armorBonus: 0,
+        resistanceType: "Ninguna"
+    };
+    setCustomInventory([...customInventory, newItem]);
+};
+
+const updateCustomItemField = (id, field, value) => {
+    setCustomInventory(customInventory.map(item => item.id === id ? { ...item, [field]: value } : item));
+};
+
+const updateCustomWeaponField = (id, field, value) => {
+    setCustomInventory(customInventory.map(item => {
+        if (item.id === id) {
+            return { ...item, weapon: { ...item.weapon, [field]: value } };
+        }
+        return item;
+    }));
+};
+
+const adjustCustomQuantity = (id, delta) => {
+    setCustomInventory(customInventory.map(item => {
+        if (item.id === id) {
+            const newQty = Math.max(0, (item.quantity || 1) + delta);
+            return { ...item, quantity: newQty };
+        }
+        return item;
+    }));
+};
+
+const removeCustomItem = (id) => {
+    setCustomInventory(customInventory.filter(item => item.id !== id));
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 // Estado para guardar los hechizos seleccionados en el Grimorio
 const [knownSpells, setKnownSpells] = useState([]);
 
@@ -847,11 +1002,24 @@ const [knownSpells, setKnownSpells] = useState([]);
         }
     });
 
-    if (!hasArmor) {
+    
+    
+
+if (!hasArmor) {
         if (info.classLevel === "Bárbaro") dexModForAC = mods.dex + mods.con;
         else if (info.classLevel === "Monje") dexModForAC = mods.dex + mods.wis;
     }
-    const computedAC = baseAC + dexModForAC + (hasShield ? 2 : 0) + Number(combat.acBonus || 0);
+
+    // 🛡️ NUEVO: Suma automáticamente el bono de CA de los objetos custom equipados
+    const customArmorBonusTotal = customInventory
+        .filter(item => item.equipped)
+        .reduce((sum, item) => sum + (Number(item.armorBonus) || 0), 0);
+
+    const computedAC = baseAC + dexModForAC + (hasShield ? 2 : 0) + Number(combat.acBonus || 0) + customArmorBonusTotal;
+
+
+
+
 
     const classWeaponProficiencies = {
         "Bárbaro": { simple: true, martial: true, specific: [] },
@@ -1028,13 +1196,56 @@ const [knownSpells, setKnownSpells] = useState([]);
         return profs;
     }, [info.classLevel, info.race, currentRace.languages, info.background, info.level]);
 
+
+
+
+
+// Detecta resistencias activas de objetos personalizados equipados
+    const activeCustomResistances = customInventory
+        .filter(item => item.equipped && item.resistanceType && item.resistanceType !== "Ninguna")
+        .map(item => ({ name: item.name, resistance: item.resistanceType }));
+
+
+
+
+
+
+
+
     return (
         <div className="min-h-screen bg-neutral-200 p-2 sm:p-6 font-sans text-neutral-900">
             <div className="w-[98%] max-w-[1600px] mx-auto bg-white p-4 sm:p-8 rounded-lg shadow-xl border-2 border-neutral-300 relative">
                 
-                <button onClick={() => setDiceModalOpen(true)} className="absolute top-4 right-4 bg-red-800 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition z-20">
-                    <ZapIcon size={18} /> Tirar Dados
-                </button>
+                {/* --- BOTONES DE ACCIÓN RÁPIDA (GUARDAR, CARGAR Y TIRAR DADOS) --- */}
+<div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+    <button 
+        onClick={saveCharacterData} 
+        className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-3 py-2 rounded-lg shadow-md flex items-center gap-1.5 transition text-xs"
+        title="Guardar personaje en archivo"
+    >
+        💾 Guardar
+    </button>
+    
+    <label 
+        className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-3 py-2 rounded-lg shadow-md flex items-center gap-1.5 transition text-xs cursor-pointer"
+        title="Cargar personaje desde archivo"
+    >
+        📂 Cargar
+        <input 
+            type="file" 
+            accept=".json" 
+            onChange={loadCharacterData} 
+            className="hidden" 
+        />
+    </label>
+
+    <button 
+        onClick={() => setDiceModalOpen(true)} 
+        className="bg-red-800 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition"
+    >
+        <ZapIcon size={18} /> Tirar Dados
+    </button>
+</div>
 
                 {/* Modales (Clase, Trasfondo, HP, Dados, Aplicar Veneno, Equipar) Omitidos por brevedad pero incluidos en código */}
                 {classModalOpen && (
@@ -1518,6 +1729,7 @@ const [knownSpells, setKnownSpells] = useState([]);
                         formatMod={formatMod}
                         currentRace={currentRace}
                         conditionsList={conditionsList}
+                        activeCustomResistances={activeCustomResistances} // <-- Nueva prop para mostrar en pantalla principal
                     />
                 )}
                 {/* --- RENDERIZADO DE LA PESTAÑA DE INVENTARIO --- */}
@@ -1540,6 +1752,14 @@ const [knownSpells, setKnownSpells] = useState([]);
                         toggleEquip={toggleEquip}
                         removeInventoryItem={removeInventoryItem}
                         handleToggleGrip={handleToggleGrip}
+                        customInventory={customInventory}
+                        addCustomItem={addCustomItem}
+                        updateCustomItemField={updateCustomItemField}
+                        updateCustomWeaponField={updateCustomWeaponField}
+                        adjustCustomQuantity={adjustCustomQuantity}
+                        removeCustomItem={removeCustomItem}
+                        mods={mods}
+                        formatMod={formatMod}
                     />
                 )}
 
