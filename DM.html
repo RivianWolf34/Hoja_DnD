@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesa del DM - D&D Tracker</title>
+    <!-- Tailwind CSS y Librerías -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900">
+    <!-- Contenedor principal de React -->
+    <div id="root"></div>
+
+    <!-- 1. Cargamos primero las bases de datos del DM -->
+    <script src="DM_DataMonster.js"></script>
+    <script src="DM_DataShop.js"></script>
+
+   
+
+    <!-- 2. Cargamos las pestañas del DM -->
+    <script type="text/babel" src="DM_CombateTab.js"></script>
+    <script type="text/babel" src="DM_BeastTab.js"></script>
+    <script type="text/babel" src="DM_ShopTab.js"></script>
+
+    <!-- 3. Cargamos el script principal del DM (¡OJO: type="text/babel" obligatorio!) -->
+    <script type="text/babel" src="DM_Script.js"></script>
+</body>
+</html>

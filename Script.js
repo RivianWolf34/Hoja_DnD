@@ -142,7 +142,11 @@ const CharacterSheet = () => {
 
 
 
-
+// Función para reiniciar todos los espacios de magia
+const resetSpellSlots = () => {
+    // Genera una matriz completamente nueva y limpia
+    setSpellSlots([4, 3, 3, 3, 3, 2, 2, 1, 1].map(max => Array(max).fill(false)));
+};
 
 
 
@@ -1218,6 +1222,17 @@ if (!hasArmor) {
                 
                 {/* --- BOTONES DE ACCIÓN RÁPIDA (GUARDAR, CARGAR Y TIRAR DADOS) --- */}
 <div className="flex flex-wrap justify-end items-center gap-2 mb-6 w-full">
+    
+    {/* ✨ BOTÓN PARA IR AL MODO DM (Redirige a dm.html) */}
+                <button 
+                    onClick={() => window.location.href = 'dm.html'} 
+                    className="absolute top-4 left-4 bg-purple-900 hover:bg-purple-800 text-white font-bold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition z-20"
+                    title="Ir a la pantalla del Dungeon Master"
+                >
+                    🐉 Modo DM
+                </button>
+
+    
     <button 
         onClick={saveCharacterData} 
         className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-3 py-2 rounded-lg shadow-md flex items-center gap-1.5 transition text-xs"
@@ -1784,6 +1799,7 @@ if (!hasArmor) {
                         info={info}
                         spellSlots={spellSlots}       // <-- Tu estado de espacios de magia
                         toggleSpellSlot={toggleSpellSlot} // <-- Tu función para actualizar los espacios
+                        resetSpellSlots={resetSpellSlots}
                         mods={mods}               // <-- Nuevo: Modificadores de atributos
                         profBonus={profBonus}     // <-- Nuevo: Bono de competencia por nivel
                         formatMod={formatMod}     // <-- Nuevo: Formateador de signos (+/-)

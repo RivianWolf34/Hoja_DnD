@@ -8,7 +8,54 @@ const BookIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/20
 const SparklesIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>);
 const ZapIcon = ({ className, size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>);
 
-const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellSlot, mods, profBonus, formatMod, setRollNotification }) => {
+// --- LÓGICA DE PROGRESIÓN DE MONEDAS ---
+const MAX_SPELL_SLOTS = [4, 3, 3, 3, 3, 2, 2, 1, 1];
+
+const getAvailableSlots = (characterClass, characterLevel) => {
+    const level = parseInt(characterLevel) || 1;
+    const lowerClass = (characterClass || "").toLowerCase();
+    
+    const isFullCaster = ["mago", "hechicero", "clérigo", "clerigo", "druida", "bardo", "wizard", "sorcerer", "cleric", "druid", "bard"].some(c => lowerClass.includes(c));
+    const isHalfCaster = ["paladín", "paladin", "explorador", "ranger"].some(c => lowerClass.includes(c));
+    const isWarlock = ["brujo", "warlock"].some(c => lowerClass.includes(c));
+
+    if (isFullCaster) {
+        const prog = {
+            1: [2,0,0,0,0,0,0,0,0], 2: [3,0,0,0,0,0,0,0,0], 3: [4,2,0,0,0,0,0,0,0], 4: [4,3,0,0,0,0,0,0,0],
+            5: [4,3,2,0,0,0,0,0,0], 6: [4,3,3,0,0,0,0,0,0], 7: [4,3,3,1,0,0,0,0,0], 8: [4,3,3,2,0,0,0,0,0],
+            9: [4,3,3,3,1,0,0,0,0], 10: [4,3,3,3,2,0,0,0,0], 11: [4,3,3,3,2,1,0,0,0], 12: [4,3,3,3,2,1,0,0,0],
+            13: [4,3,3,3,2,1,1,0,0], 14: [4,3,3,3,2,1,1,0,0], 15: [4,3,3,3,2,1,1,1,0], 16: [4,3,3,3,2,1,1,1,0],
+            17: [4,3,3,3,2,1,1,1,1], 18: [4,3,3,3,3,1,1,1,1], 19: [4,3,3,3,3,2,1,1,1], 20: [4,3,3,3,3,2,2,1,1]
+        };
+        return prog[level] || MAX_SPELL_SLOTS;
+    }
+
+    if (isHalfCaster) {
+        const prog = {
+            1: [0,0,0,0,0,0,0,0,0], 2: [2,0,0,0,0,0,0,0,0], 3: [3,0,0,0,0,0,0,0,0], 4: [3,0,0,0,0,0,0,0,0],
+            5: [4,2,0,0,0,0,0,0,0], 6: [4,2,0,0,0,0,0,0,0], 7: [4,3,0,0,0,0,0,0,0], 8: [4,3,0,0,0,0,0,0,0],
+            9: [4,3,2,0,0,0,0,0,0], 10: [4,3,2,0,0,0,0,0,0], 11: [4,3,3,0,0,0,0,0,0], 12: [4,3,3,0,0,0,0,0,0],
+            13: [4,3,3,1,0,0,0,0,0], 14: [4,3,3,1,0,0,0,0,0], 15: [4,3,3,2,0,0,0,0,0], 16: [4,3,3,2,0,0,0,0,0],
+            17: [4,3,3,3,1,0,0,0,0], 18: [4,3,3,3,1,0,0,0,0], 19: [4,3,3,3,2,0,0,0,0], 20: [4,3,3,3,2,0,0,0,0]
+        };
+        return prog[level] || MAX_SPELL_SLOTS.map(() => 0);
+    }
+
+    if (isWarlock) {
+        const prog = {
+            1: [1,0,0,0,0,0,0,0,0], 2: [2,0,0,0,0,0,0,0,0], 3: [0,2,0,0,0,0,0,0,0], 4: [0,2,0,0,0,0,0,0,0],
+            5: [0,0,2,0,0,0,0,0,0], 6: [0,0,2,0,0,0,0,0,0], 7: [0,0,0,2,0,0,0,0,0], 8: [0,0,0,2,0,0,0,0,0],
+            9: [0,0,0,0,2,0,0,0,0], 10: [0,0,0,0,2,0,0,0,0]
+        };
+        if (level >= 11 && level <= 16) return [0,0,0,0,3,0,0,0,0];
+        if (level >= 17) return [0,0,0,0,4,0,0,0,0];
+        return prog[level] || MAX_SPELL_SLOTS.map(() => 0);
+    }
+
+    return MAX_SPELL_SLOTS.map(() => 0);
+};
+
+const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellSlot, resetSpellSlots, mods, profBonus, formatMod, setRollNotification }) => {
     
     // --- ESTADOS LOCALES ---
     const [spellSearch, setSpellSearch] = useState('');
@@ -48,9 +95,9 @@ const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellS
             id: Date.now(),
             title: "Nueva Habilidad",
             description: "Describe aquí los efectos de tu habilidad...",
-            uses: Array(10).fill(false), // 10 círculos de usos
-            selectedStat: "none",        // Atributo base a sumar
-            diceCounts: { 4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 0, 100: 0 } // Dados configurables
+            uses: Array(10).fill(false),
+            selectedStat: "none",
+            diceCounts: { 4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 0, 100: 0 }
         };
         setCustomAbilities([...customAbilities, newAbility]);
     };
@@ -189,6 +236,60 @@ const SpellsTab = ({ knownSpells, setKnownSpells, info, spellSlots, toggleSpellS
                 >
                     🎲 Ataque de Conjuro ({formatMod(spellAttackBonus)})
                 </button>
+            </div>
+
+            {/* --- MONEDERO MÁGICO (SPELL SLOTS) --- */}
+            <div className="bg-white border-2 border-purple-200 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+                <div className="flex justify-between items-center border-b-2 border-purple-100 pb-2">
+                    <h3 className="text-lg font-black text-purple-900 flex items-center gap-2">
+                        🔮 Espacios de Magia (Nivel {info.level || 1})
+                    </h3>
+                    
+                    {/* AQUÍ ESTÁ EL BOTÓN ACTUALIZADO */}
+                    <button 
+                        onClick={resetSpellSlots}
+                        className="bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold px-3 py-1.5 rounded-lg text-xs transition border border-purple-300 flex items-center gap-1"
+                    >
+                        🔄 Reiniciar espacios
+                    </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-x-6 gap-y-4">
+                    {MAX_SPELL_SLOTS.map((maxCap, magicLevelIndex) => {
+                        const magicLevel = magicLevelIndex + 1;
+                        const availableSlots = getAvailableSlots(info.classLevel, info.level);
+                        const limit = availableSlots[magicLevelIndex];
+                        
+                        return (
+                            <div key={`magic-level-${magicLevel}`} className="flex flex-col gap-2 min-w-[60px]">
+                                <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider text-center bg-neutral-50 rounded border border-neutral-200 py-0.5">Nivel {magicLevel}</h4>
+                                
+                                <div className={`mx-auto ${magicLevel === 1 ? 'grid grid-cols-2 grid-rows-2 gap-1.5 w-max' : 'flex gap-1.5'}`}>
+                                    {Array.from({ length: maxCap }).map((_, slotIndex) => {
+                                        const isLocked = slotIndex >= limit;
+                                        const isUsed = spellSlots && spellSlots[magicLevelIndex] ? spellSlots[magicLevelIndex][slotIndex] : false;
+
+                                        return (
+                                            <button
+                                                key={`slot-${magicLevel}-${slotIndex}`}
+                                                onClick={() => !isLocked && toggleSpellSlot(magicLevelIndex, slotIndex)}
+                                                disabled={isLocked}
+                                                title={isLocked ? 'Bloqueado por nivel/clase' : (isUsed ? 'Marcar como disponible' : 'Gastar espacio de magia')}
+                                                className={`w-6 h-6 rounded-full border-2 transition-all flex-shrink-0 ${
+                                                    isLocked 
+                                                        ? 'bg-neutral-200 border-neutral-300 opacity-40 cursor-not-allowed' 
+                                                        : isUsed 
+                                                            ? 'bg-blue-500 border-blue-700 shadow-inner' 
+                                                            : 'bg-white border-neutral-400 hover:border-blue-400 cursor-pointer shadow-sm'
+                                                }`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* BUSCADOR Y SELECTOR DE HECHIZOS */}
