@@ -1217,7 +1217,7 @@ if (!hasArmor) {
             <div className="w-[98%] max-w-[1600px] mx-auto bg-white p-4 sm:p-8 rounded-lg shadow-xl border-2 border-neutral-300 relative">
                 
                 {/* --- BOTONES DE ACCIÓN RÁPIDA (GUARDAR, CARGAR Y TIRAR DADOS) --- */}
-<div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+<div className="flex flex-wrap justify-end items-center gap-2 mb-6 w-full">
     <button 
         onClick={saveCharacterData} 
         className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold px-3 py-2 rounded-lg shadow-md flex items-center gap-1.5 transition text-xs"
@@ -1249,7 +1249,7 @@ if (!hasArmor) {
 
                 {/* Modales (Clase, Trasfondo, HP, Dados, Aplicar Veneno, Equipar) Omitidos por brevedad pero incluidos en código */}
                 {classModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
                         <div className="bg-white rounded-xl p-6 max-w-xl w-full shadow-2xl border-2 border-red-800 flex flex-col max-h-[90vh]">
                             <h3 className="text-lg font-black text-red-900 mb-4 flex items-center gap-2"><SwordIcon size={24}/> Selección de Clase y Habilidades</h3>
 
@@ -1313,7 +1313,7 @@ if (!hasArmor) {
                 )}
 
                 {bgModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
                         <div className="bg-white rounded-xl p-6 max-w-xl w-full shadow-2xl border-2 border-red-800 flex flex-col max-h-[90vh]">
                             <h3 className="text-lg font-black text-red-900 mb-4 flex items-center gap-2"><BookOpenIcon size={24}/> Selección de Trasfondo</h3>
 
@@ -1429,7 +1429,7 @@ if (!hasArmor) {
                 )}
 
                 {rollNotification && (
-                    <div className="fixed bottom-6 right-6 bg-neutral-900 text-white rounded-xl p-4 shadow-2xl border-2 border-red-600 z-50 max-w-xs">
+                    <div className="fixed bottom-6 right-6 bg-neutral-900 text-white rounded-xl p-4 shadow-2xl border-2 border-red-600 z-[100] max-w-xs">
                         <div className="flex justify-between items-start mb-1">
                             <span className="text-xs font-bold text-red-400 uppercase">{rollNotification.title}</span>
                             <button onClick={() => setRollNotification(null)} className="text-neutral-400 hover:text-white font-bold">&times;</button>
@@ -1445,7 +1445,7 @@ if (!hasArmor) {
                 )}
 
                 {hpModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
                         <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl border-2 border-red-800">
                             <h3 className="text-lg font-black text-red-900 mb-2 flex items-center gap-2">❤️ Subida de Nivel a Nivel {hpModalOpen.targetLevel}</h3>
                             <p className="text-xs text-neutral-600 mb-4">¿Cómo deseas calcular el incremento de tus Puntos de Golpe Máximos para este nuevo nivel? (Se sumará automáticamente tu modificador de Constitución: <strong className="text-black">{formatMod(mods.con)}</strong>).</p>
@@ -1472,7 +1472,7 @@ if (!hasArmor) {
                 )}
 
                 {diceModalOpen && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
                         <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl">
                             <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center gap-2"><ZapIcon size={20} /> Lanzar Dados manual</h3>
                             
@@ -1516,7 +1516,7 @@ if (!hasArmor) {
                 )}
 
                 {applyPoisonModal && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
                         <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl border-2 border-red-800 flex flex-col">
                             <h3 className="text-lg font-black text-red-900 mb-2 flex items-center gap-2">🩸 Aplicar {applyPoisonModal.poisonName}</h3>
                             <p className="text-xs text-neutral-600 mb-4">Selecciona un arma <strong>equipada</strong> que realice daño <strong>cortante</strong> o <strong>perforante</strong> para aplicarle una carga de este veneno (consumirá 1 unidad del inventario).</p>
@@ -1570,7 +1570,7 @@ if (!hasArmor) {
                 )}
 
                 {equipFlow && (
-                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
                         <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border-2 border-neutral-400">
                             <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center gap-2"><SwordIcon size={20} /> Equipar Objeto</h3>
                             
