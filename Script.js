@@ -1225,7 +1225,7 @@ if (!hasArmor) {
     
     {/* ✨ BOTÓN PARA IR AL MODO DM (Redirige a dm.html) */}
                 <button 
-                    onClick={() => window.location.href = 'dm.html'} 
+                    onClick={() => window.location.href = 'DM.html'} 
                     className="absolute top-4 left-4 bg-purple-900 hover:bg-purple-800 text-white font-bold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition z-20"
                     title="Ir a la pantalla del Dungeon Master"
                 >
