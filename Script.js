@@ -1223,7 +1223,7 @@ if (!hasArmor) {
                 {/* --- BOTONES DE ACCIÓN RÁPIDA (GUARDAR, CARGAR Y TIRAR DADOS) --- */}
 <div className="flex flex-wrap justify-end items-center gap-2 mb-6 w-full">
     
-    {/* ✨ BOTÓN PARA IR AL MODO DM (Redirige a dm.html) */}
+    {/* ✨ BOTÓN PARA IR AL MODO DM (Redirige a DM.html) */}
                 <button 
                     onClick={() => window.location.href = 'DM.html'} 
                     className="absolute top-4 left-4 bg-purple-900 hover:bg-purple-800 text-white font-bold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition z-20"
